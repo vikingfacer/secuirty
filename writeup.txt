@@ -1,0 +1,99 @@
+Task 1.1
+The above program sniffs packets.  For each captured packet, the callback function print pkt() will be in-voked;  this function will print out some of the information about the packet.  Run the program with theroot privilege and demonstrate that you can indeed capture packets.  After that, run the program again, but without using the root privilege; describe and explain your observations
+
+
+after running sudo python sniffer.py
+sniffer outputs this: (this was caugh by pinging an ip on the network)
+
+###[ Ethernet ]### 
+  dst       = 08:00:27:92:8b:6c
+  src       = 08:00:27:26:37:3f
+  type      = 0x800
+###[ IP ]### 
+     version   = 4
+     ihl       = 5
+     tos       = 0x0
+     len       = 84
+     id        = 13624
+     flags     = DF
+     frag      = 0
+     ttl       = 64
+     proto     = icmp
+     chksum    = 0xed68
+     src       = 10.0.2.5
+     dst       = 10.0.2.4
+     \options   \
+###[ ICMP ]### 
+        type      = echo-request
+        code      = 0
+        chksum    = 0xd637
+        id        = 0x974
+        seq       = 0x1
+###[ Raw ]### 
+           load      = '\xd7\x93\t\\J`\x02\x00\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !"#$%&\'()*+,-./01234567'
+
+
+after running python sniffer.py
+sniffer outputs this:
+
+	    File "sniffer.py", line 10, in <module>
+	      print_pkt(a)
+	    File "sniffer.py", line 6, in print_pkt
+	      pkt = sniff(filter='icmp',prn=print_pkt)
+	    File "/home/seed/.local/lib/python2.7/site-packages/scapy/sendrecv.py", line 731, in sniff
+	      *arg, **karg)] = iface
+	    File "/home/seed/.local/lib/python2.7/site-packages/scapy/arch/linux.py", line 567, in __init__
+	      self.ins = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(type))
+	    File "/usr/lib/python2.7/socket.py", line 191, in __init__
+	      _sock = _realsocket(family, type, proto)
+	  socket.error: [Errno 1] Operation not permitted
+
+this difference in output is because what the python script accesses needs root privilages. 
+
+
+ Task1.2 
+ Usually, when we sniff packets, we are only interested certain types of packets.  We can do that by setting filters in sniffing.  Scapys filter use the BPF (Berkeley Packet Filter) syntax; you can find the BPF manual
+from the Internet.  Please set the following filters and demonstrate your sniffer program again (each filter should be set separately):
+
+1. Capture only the ICMP packet
+
+pkt = sniff(filter='icmp',prn=print_pkt)
+
+to do this with the sniffer script the clone vm needs to ping anther machine on the network. 
+the sniffer.py outputs:
+  type      = 0x800
+###[ IP ]### 
+     version   = 4
+     ihl       = 5
+     tos       = 0x0
+     len       = 84
+     id        = 2875
+     flags     = 
+     frag      = 0
+     ttl       = 64
+     proto     = icmp
+     chksum    = 0x5766
+     src       = 10.0.2.4
+     dst       = 10.0.2.5
+     \options   \
+###[ ICMP ]### 
+        type      = echo-reply
+        code      = 0
+        chksum    = 0xc8c6
+        id        = 0x96f
+        seq       = 0x2
+###[ Raw ]### 
+           load      = '\xab\x93\t\\\x82\xd5\x0b\x00\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !"#$%&\'()*+,-./01234567'
+
+when during the ping. filter only needs to be set as filter='icmp'.
+
+
+2. Capture any TCP packet that comes from a particular IP and with a destination port number 23
+
+using netcat command on the clone machine : nc -vn 10.0.2.4 23
+
+and running the sniffer.py with 
+	pkt = sniff(filter='tcp src 10.0.2.5 dst port 23',prn=print_pkt)
+
+
+3.  Capture  packets  comes  from  or  to  go  to  a  particular  subnet.   You  can  pick  any  subnet,  such  as 173.194.208.0/24; you should not pick the subnet that your VM is attached to.
